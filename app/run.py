@@ -8,8 +8,10 @@ from nltk.tokenize import word_tokenize
 from flask import Flask
 from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar
-from sklearn.externals import joblib
+import joblib
 from sqlalchemy import create_engine
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
 
 
 app = Flask(__name__)
@@ -26,11 +28,11 @@ def tokenize(text):
     return clean_tokens
 
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
-
+engine = create_engine('sqlite:///../data/DisasterResponse.db')
+df = pd.read_sql_table('DRTable', engine)
+print(df.head(10))
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load("../models/classifier.pkl")
 
 
 # index webpage displays cool visuals and receives user input text for model
@@ -40,9 +42,23 @@ def index():
     
     # extract data needed for visuals
     # TODO: Below is an example - modify to extract data for your own visuals
+
+    X_train, X_test, Y_train, Y_test = train_test_split(df["message"], 
+        df.drop(columns=["id", "message", "original", "genre"]), test_size=0.2, random_state=42)
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
     
+    col_sums_train = Y_train.sum(axis=0)
+    col_sums_test = Y_test.sum(axis=0)
+    
+    # Visualise classification report
+    #class_rep = classification_report(Y_test, model.predict(X_test), output_dict=True)
+    #class_rep_df = pd.DataFrame(class_rep).transpose()
+
+
+    #Y_pred = model.predict(X_test)
+    #col_sums_pred = pd.DataFrame(Y_pred, columns=Y_test.columns).sum(axis=0)
+
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
     graphs = [
@@ -61,6 +77,42 @@ def index():
                 },
                 'xaxis': {
                     'title': "Genre"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=Y_train.columns,
+                    y=col_sums_train
+                )
+            ],
+
+            'layout': {
+                'title': 'Class distribution in training set',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Class"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=Y_test.columns,
+                    y=col_sums_test
+                )
+            ],
+
+            'layout': {
+                'title': 'Class distribution in test set',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Class"
                 }
             }
         }
@@ -82,6 +134,7 @@ def go():
 
     # use model to predict classification for query
     classification_labels = model.predict([query])[0]
+    print(classification_labels)
     classification_results = dict(zip(df.columns[4:], classification_labels))
 
     # This will render the go.html Please see that file. 
@@ -93,7 +146,7 @@ def go():
 
 
 def main():
-    app.run(host='0.0.0.0', port=3000, debug=True)
+    app.run(host='0.0.0.0', port=3001, debug=True)
 
 
 if __name__ == '__main__':

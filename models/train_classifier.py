@@ -8,6 +8,7 @@ from nltk.corpus import stopwords
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.metrics import classification_report
@@ -15,18 +16,36 @@ import joblib
 
 
 def load_data(database_filepath):
+    """Load data from database and return X, Y, and category names
+
+    Args:
+        database_filepath (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     # Read df from SQL database
     engine = create_engine(f'sqlite:///{database_filepath}')
-    df = pd.read_sql_table(database_filepath, engine)
+    df = pd.read_sql_table("DRTable", engine)
     # Split df into X and Y
     X = df["message"]
     Y = df.drop(columns=["id", "message", "original", "genre"])
     # Get category names
-    category_names = Y.columns
+    category_names = Y.columns.values
     return X, Y, category_names
 
 
 def tokenize(text):
+    """
+    Tokenize text and return list of tokens
+
+    Args:
+        text (string): String to be tokenized
+
+    Returns:
+        _type_: List of tokens
+    """
+
     # Normalize text
     text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
     # Tokenize text
@@ -38,16 +57,42 @@ def tokenize(text):
 
 
 def build_model():
+    """
+    Build model and return model
+
+    Returns:
+        sklearn model: Built model
+    """
+
+    # Grid search params
+    parameters = {
+        "clf__estimator__n_estimators": [10, 20],
+        "clf__estimator__min_samples_split": [2, 4]
+    }
+
     # Build model to be used in app
-    model = Pipeline([
+    pipe = Pipeline([
         ('vect', CountVectorizer(tokenizer=tokenize)),
         ('tfidf', TfidfTransformer()),
         ('clf', MultiOutputClassifier(RandomForestClassifier()))
     ])
-    return model
+
+    grid = GridSearchCV(pipe, parameters, cv=2)
+    return grid
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    """Evaluate model and print classification report
+
+    Args:
+        model (sklearn model): sklearn model
+        X_test (numpy ndarray): test features
+        Y_test (numpy 1darray): test labels
+        category_names (list): list of category names
+
+    Returns:
+        1d array: predictions
+    """
     # Evaluate model
     Y_pred = model.predict(X_test)
     for i, col in enumerate(category_names):
@@ -67,13 +112,16 @@ def main():
         database_filepath, model_filepath = sys.argv[1:]
         print('Loading data...\n    DATABASE: {}'.format(database_filepath))
         X, Y, category_names = load_data(database_filepath)
-        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
         
+        print("Y vals:")
+        print(Y.columns.values)
+
         print('Building model...')
         model = build_model()
         
         print('Training model...')
-        model.fit(X_train, Y_train)
+        model = model.fit(X_train, Y_train)
         
         print('Evaluating model...')
         evaluate_model(model, X_test, Y_test, category_names)

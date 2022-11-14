@@ -3,6 +3,15 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
+    """Get data from csv files and merge them into one dataframe
+
+    Args:
+        messages_filepath (_type_): _description_
+        categories_filepath (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     # Load messages
     messages = pd.read_csv(messages_filepath, sep=',')
     # Load categories
@@ -15,12 +24,22 @@ def load_data(messages_filepath, categories_filepath):
 
 
 def clean_data(df):
+    """
+    Clean data
+
+    Args:
+        df (pandas dataframe): dataframe to be cleaned
+
+    Returns:
+        pandas dataframe: cleaned dataframe
+    """
+
     # Create a dataframe of the 36 individual category columns
     categories = df["categories"].str.split(pat=";", expand=True)
 
     # Use first row to extract a list of new column names for categories.
     row = categories.iloc[0]
-    category_colnames = row.apply(lambda x: x.split("-")[0], axis=1)
+    category_colnames = row.apply(lambda x: x.split("-")[0])
     categories.columns = category_colnames
 
     # Convert category values to just numbers 0 or 1.
@@ -41,8 +60,17 @@ def clean_data(df):
 
 
 def save_data(df, database_filename):
+    """
+    Save data to database
+
+    Args:
+        df (pandas dataframe): dataframe to be saved
+        database_filename (string): SQL database filename
+
+    """
+
     engine = create_engine(f'sqlite:///{database_filename}')
-    df.to_sql(database_filename, engine, index=False)
+    df.to_sql("DRTable", engine, index=False)
 
 
 def main():
