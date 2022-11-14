@@ -12,4 +12,22 @@
 
 3. Run your web app: `python run.py`
 
-4. Click the `PREVIEW` button to open the homepage
+4. Go to `http://localhost:3001` in the browser to view the visualisations.
+
+## disaster-reponse files
+
+* [app/](./disaster-reponse/app)
+  * [templates/](./disaster-reponse/app/templates)
+    * [go.html](./disaster-reponse/app/templates/go.html)
+    * [master.html](./disaster-reponse/app/templates/master.html)
+  * [run.py](./disaster-reponse/app/run.py)
+* [data/](./disaster-reponse/data)
+  * [DisasterResponse.db](./disaster-reponse/data/DisasterResponse.db)
+  * [disaster_categories.csv](./disaster-reponse/data/disaster_categories.csv)
+  * [disaster_messages.csv](./disaster-reponse/data/disaster_messages.csv)
+  * [process_data.py](./disaster-reponse/data/process_data.py)
+* [models/](./disaster-reponse/models)
+  * [classifier.pkl](./disaster-reponse/models/classifier.pkl)
+  * [train_classifier.py](./disaster-reponse/models/train_classifier.py)
+* [LICENSE](./disaster-reponse/LICENSE)
+* [README.md](./disaster-reponse/README.md)
